@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaMicrophone, FaMicrophoneSlash } from 'react-icons/fa';
+import {
+  FaMicrophone,
+  FaMicrophoneSlash,
+  FaVolumeUp,
+  FaVolumeMute,
+} from 'react-icons/fa';
 
 export default function CounsellorBotChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const recognitionRef = useRef(null);
 
   useEffect(() => {
@@ -18,7 +24,7 @@ export default function CounsellorBotChat() {
     recognition.interimResults = false;
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      setInput(transcript);
+      sendMessage(transcript);
     };
     recognition.onend = () => setIsListening(false);
     recognitionRef.current = recognition;
@@ -28,36 +34,10 @@ export default function CounsellorBotChat() {
     };
   }, []);
 
-  const handleInputChange = (event) => setInput(event.target.value);
+  const sendMessage = async (text) => {
+    if (!text.trim() || isLoading) return;
 
-  const toggleListening = () => {
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-
-    if (isListening) {
-      recognition.stop();
-    } else {
-      recognition.start();
-    }
-
-    setIsListening((prev) => !prev);
-  };
-
-  useEffect(() => {
-    if (!messages.length || !window.speechSynthesis) return;
-    const last = messages[messages.length - 1];
-    if (last.sender === 'bot') {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(last.text);
-      window.speechSynthesis.speak(utterance);
-    }
-  }, [messages]);
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = { sender: 'user', text: input };
+    const userMessage = { sender: 'user', text };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -71,10 +51,10 @@ export default function CounsellorBotChat() {
           Authorization: `Bearer ${process.env.REACT_APP_GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile', // ✅ Updated to supported model
+          model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: input },
+            { role: 'user', content: text },
           ],
         }),
       });
@@ -100,10 +80,52 @@ export default function CounsellorBotChat() {
     }
   };
 
+  const handleInputChange = (event) => setInput(event.target.value);
+
+  const toggleListening = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+    }
+
+    setIsListening((prev) => !prev);
+  };
+
+  const speakText = (text) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    if (!messages.length || !autoSpeak) return;
+    const last = messages[messages.length - 1];
+    if (last.sender === 'bot') {
+      speakText(last.text);
+    }
+  }, [messages, autoSpeak]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    await sendMessage(input);
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.chatContainer}>
         <h2 style={styles.header}>CounsellorGPT</h2>
+        <button
+          type="button"
+          onClick={() => setAutoSpeak((prev) => !prev)}
+          style={styles.autoSpeakButton}
+        >
+          {autoSpeak ? <FaVolumeUp /> : <FaVolumeMute />}
+        </button>
         <div style={styles.chatBox}>
           {messages.map((msg, index) => (
             <div
@@ -121,6 +143,15 @@ export default function CounsellorBotChat() {
               >
                 {msg.text}
               </p>
+              {msg.sender === 'bot' && (
+                <button
+                  type="button"
+                  onClick={() => speakText(msg.text)}
+                  style={styles.speakButton}
+                >
+                  <FaVolumeUp />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -205,6 +236,15 @@ const styles = {
     lineHeight: '1.5',
     wordWrap: 'break-word',
   },
+  speakButton: {
+    marginLeft: '8px',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '18px',
+    display: 'flex',
+    alignItems: 'center',
+  },
   inputContainer: {
     display: 'flex',
     gap: '10px',
@@ -234,5 +274,16 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  autoSpeakButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '20px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '10px',
+    alignSelf: 'flex-end',
   },
 };
