@@ -157,3 +157,8 @@ ___
 ___
 
 <br>
+
+## Voice Interaction
+
+The counsellor bot now supports speech recognition and speech synthesis for hands-free conversations. Click the microphone button to dictate your message and listen to the bot's responses aloud.
+

@@ -1,11 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaMicrophone, FaMicrophoneSlash } from 'react-icons/fa';
 
 export default function CounsellorBotChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.stop();
+    };
+  }, []);
 
   const handleInputChange = (event) => setInput(event.target.value);
+
+  const toggleListening = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+    }
+
+    setIsListening((prev) => !prev);
+  };
+
+  useEffect(() => {
+    if (!messages.length || !window.speechSynthesis) return;
+    const last = messages[messages.length - 1];
+    if (last.sender === 'bot') {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(last.text);
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [messages]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -87,6 +133,17 @@ export default function CounsellorBotChat() {
             style={styles.input}
             disabled={isLoading}
           />
+          <button
+            type="button"
+            onClick={toggleListening}
+            style={{
+              ...styles.micButton,
+              color: isListening ? 'red' : '#007bff',
+            }}
+            disabled={isLoading || !recognitionRef.current}
+          >
+            {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+          </button>
           <button type="submit" style={styles.button} disabled={isLoading}>
             {isLoading ? '...' : 'Send'}
           </button>
@@ -168,5 +225,14 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     fontSize: '16px',
+  },
+  micButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 };
