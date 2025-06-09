@@ -3,76 +3,76 @@ import React, { useState } from 'react';
 export default function CounsellorBotChat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleInputChange = (event) => {
-    setInput(event.target.value);
-  };
+  const handleInputChange = (event) => setInput(event.target.value);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = { sender: 'user', text: input };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
 
     try {
-      const prompt = `You are CounsellorGPT, a compassionate and supportive mental health chatbot. Your purpose is to help users explore their feelings, thoughts, and challenges in a safe and confidential space. 
+      const systemPrompt = `You are CounsellorGPT, a kind, thoughtful and compassionate AI counselor who supports emotional well-being and mental health. Respond simply, clearly, and empathetically.`;
 
-      Please respond to the following user message in plain text, without any formatting or special characters. Focus on providing a clear and concise response that promotes emotional well-being and mental health:
-      
-      User: ${input}`;      
-
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.REACT_APP_GEMINI_API_KEY}` , {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.REACT_APP_GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt 
-                }
-              ]
-            }
-          ]
-        })
+          model: 'llama-3.3-70b-versatile', // ✅ Updated to supported model
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: input },
+          ],
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        const errorText = await response.text();
+        throw new Error(`Groq error (${response.status}): ${errorText}`);
       }
 
       const data = await response.json();
-
-      const botMessageText = data.candidates[0].content.parts[0].text;
-      const botMessage = { sender: 'bot', text: botMessageText };
-      setMessages((prevMessages) => [...prevMessages, botMessage]);
-
+      const botReply = data.choices?.[0]?.message?.content || "I'm here for you.";
+      const botMessage = { sender: 'bot', text: botReply };
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.error('Error communicating with the API:', error);
-
-      const errorMessage = { sender: 'bot', text: 'Sorry, something went wrong. Please try again.' };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      console.error('Error from Groq:', error);
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'bot', text: 'Sorry, something went wrong. Please try again shortly.' },
+      ]);
+    } finally {
+      setIsLoading(false);
+      setInput('');
     }
-
-    setInput('');
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.chatContainer}>
-        <h2 style={styles.header}>CounsellorGPT</h2> 
+        <h2 style={styles.header}>CounsellorGPT</h2>
         <div style={styles.chatBox}>
           {messages.map((msg, index) => (
-            <div key={index} style={{ ...styles.messageContainer, justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start' }}>
-              <p style={{
-                ...styles.message,
-                backgroundColor: msg.sender === 'user' ? '#dcf8c6' : '#f1f0f0',
-              }}>
+            <div
+              key={index}
+              style={{
+                ...styles.messageContainer,
+                justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+              }}
+            >
+              <p
+                style={{
+                  ...styles.message,
+                  backgroundColor: msg.sender === 'user' ? '#dcf8c6' : '#f1f0f0',
+                }}
+              >
                 {msg.text}
               </p>
             </div>
@@ -83,11 +83,12 @@ export default function CounsellorBotChat() {
             type="text"
             value={input}
             onChange={handleInputChange}
-            placeholder="Type your message..."
+            placeholder={isLoading ? 'Thinking...' : 'Type your message...'}
             style={styles.input}
+            disabled={isLoading}
           />
-          <button type="submit" style={styles.button}>
-            Send
+          <button type="submit" style={styles.button} disabled={isLoading}>
+            {isLoading ? '...' : 'Send'}
           </button>
         </form>
       </div>
@@ -112,8 +113,8 @@ const styles = {
     borderRadius: '10px',
     backgroundColor: '#fff',
     width: '100%',
-    maxWidth: '900px', 
-    height: '85vh', 
+    maxWidth: '900px',
+    height: '85vh',
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
     padding: '20px',
   },
@@ -133,31 +134,34 @@ const styles = {
     borderRadius: '10px',
     border: '1px solid #e0e0e0',
     backgroundColor: '#fafafa',
-    marginBottom: '20px', 
+    marginBottom: '20px',
+  },
+  messageContainer: {
+    display: 'flex',
+    marginBottom: '10px',
   },
   message: {
-    padding: '12px 18px', 
+    padding: '12px 18px',
     borderRadius: '20px',
     maxWidth: '75%',
-    marginBottom: '10px',
-    fontSize: '16px', 
+    fontSize: '16px',
     lineHeight: '1.5',
     wordWrap: 'break-word',
   },
   inputContainer: {
     display: 'flex',
     gap: '10px',
-    padding: '10px 0', 
+    padding: '10px 0',
   },
   input: {
     flexGrow: 1,
-    padding: '15px', 
-    borderRadius: '30px', 
+    padding: '15px',
+    borderRadius: '30px',
     border: '1px solid #ddd',
     fontSize: '16px',
   },
   button: {
-    padding: '10px 30px', 
+    padding: '10px 30px',
     borderRadius: '30px',
     backgroundColor: '#007bff',
     color: '#fff',
@@ -166,4 +170,3 @@ const styles = {
     fontSize: '16px',
   },
 };
-
