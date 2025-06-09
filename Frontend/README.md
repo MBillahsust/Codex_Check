@@ -100,6 +100,12 @@ cd Frontend
 npm install
 ```
 
+4. Create a `.env` file in the `Frontend` directory and add your Gemini API key:
+```bash
+REACT_APP_GEMINI_API_KEY=your_api_key_here
+```
+The `.env` file is already listed in `.gitignore` so it will not be committed to version control.
+
 ## Running the Application
 
 To start the development server:
