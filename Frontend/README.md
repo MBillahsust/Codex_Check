@@ -160,5 +160,5 @@ ___
 
 ## Voice Interaction
 
-The counsellor bot now supports speech recognition and speech synthesis for hands-free conversations. Click the microphone button to dictate your message and listen to the bot's responses aloud.
+The counsellor bot now supports speech recognition and speech synthesis for hands-free conversations. Tap the microphone icon to record and automatically send your message. Each reply from the bot includes a speaker button so you can replay it aloud. Use the volume icon above the chat to toggle automatic text-to-speech for new responses.
 
