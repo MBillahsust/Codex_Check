@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { FaTimes } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 import {
   FaEdit,
@@ -32,6 +33,7 @@ import ActivityPieChart from '../Components/ActivityPieChart';
 
 const UserDashboard = () => {
   const { userInfo } = useContext(UserContext);
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [assessments, setAssessments] = useState([]);
@@ -149,8 +151,11 @@ const UserDashboard = () => {
   };
 
   useEffect(() => {
+    if (!userInfo || !userInfo.token) {
+      navigate('/login', { state: { from: '/dashboard' } });
+      return;
+    }
     setIsClient(true);
-    if (!userInfo || !userInfo.token) return;
     const fetchUserProfile = async () => {
       setLoadingUser(true);
       try {
@@ -273,7 +278,7 @@ const UserDashboard = () => {
     fetchMoodHistory();
     fetchActivityHistory();
     fetchAssessments();
-  }, [userInfo]);
+  }, [userInfo, navigate]);
 
   // Reset assessmentPage if assessments change and current page is out of range
   useEffect(() => {
@@ -744,10 +749,11 @@ const UserDashboard = () => {
                     return {
                       date: dateLabel,
                       time: timeLabel,
-                      score: Number(moodScoreMap[entry.mood?.toLowerCase()] ?? 0)
+                      score: Number(moodScoreMap[entry.mood?.toLowerCase()] ?? 0),
+                      mood: entry.mood || ''
                     };
                   });
-                return <MoodChart moodData={chartData} width={700} height={350} showTimeBelowDate={true} />;
+                return <MoodChart moodData={chartData} width={1100} height={420} showTimeBelowDate={true} />;
               })()}
             </div>
           

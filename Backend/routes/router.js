@@ -3,6 +3,9 @@ const Controller = require("../controller/userController");
 const ResearchController = require("../controller/researchController")
 const assesmentController = require("../controller/assesmentController");
 const moodAndActivityController = require("../controller/moodAndActivityController");
+const gameController = require("../controller/gameController");
+const doctorController = require("../controller/doctorController");
+
 const isLogin = require("../middlewares/middlewares");
 
 
@@ -43,5 +46,24 @@ Router.get("/activity/last10pie", isLogin, moodAndActivityController.getLast10Ac
 
 // Research
 Router.post("/research", ResearchController.submitResearch)
+
+
+
+
+
+// Game 
+Router.post("/gameScore", isLogin, gameController.updateAndGetGameScores);
+Router.get("/gameRank/:game_name", isLogin, gameController.getPlayerRank);
+Router.post("/gameassessment", isLogin, gameController.postGameAssessment);
+Router.get("/gameassessmentData", isLogin, gameController.getAllGameAssessments);
+
+
+
+// Doctor
+Router.post("/addDoctor", isLogin, doctorController.createDoctor);
+Router.get("/getallDoctor", doctorController.getAllDoctors);
+Router.post("/recommandDoctor", isLogin, doctorController.recommendDoctorsController);
+
+
 
 module.exports = Router;

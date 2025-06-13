@@ -100,12 +100,6 @@ cd Frontend
 npm install
 ```
 
-4. Create a `.env` file in the `Frontend` directory and add your Gemini API key:
-```bash
-REACT_APP_GEMINI_API_KEY=your_api_key_here
-```
-The `.env` file is already listed in `.gitignore` so it will not be committed to version control.
-
 ## Running the Application
 
 To start the development server:
@@ -157,8 +151,3 @@ ___
 ___
 
 <br>
-
-## Voice Interaction
-
-The counsellor bot now supports speech recognition and speech synthesis for hands-free conversations. Tap the microphone icon to record and automatically send your message. Each reply from the bot includes a speaker button so you can replay it aloud. Use the volume icon above the chat to toggle automatic text-to-speech for new responses.
-
